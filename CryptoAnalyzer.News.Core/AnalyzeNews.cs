@@ -22,13 +22,18 @@ public class AnalyzeNews : BackgroundService
                 using (var scope = _serviceProvider.CreateScope())
                 {
                     var repository = scope.ServiceProvider.GetRequiredService<INewsRepository>();
+                    var latestNews = (await repository.GetLatestNewsAsync()).ToList();
+                    var newsInDb = await repository.GetNewsAsync();
 
-                    var rawNews = await repository.GetLatestNewsAsync();
+                    var news = latestNews.Where(x => newsInDb.All(n => n.Text != x.Text)).ToList();
+                    
+                    var rawNews = string.Join("/n", news.Select(n => n.Text));
 
                     if (!string.IsNullOrWhiteSpace(rawNews))
                     {
                         var analyzedNews = await repository.NormalizeNews(rawNews);
-                        await repository.CreateNewsAsync(analyzedNews);
+                        news.Add(analyzedNews);
+                        await repository.CreateNewsAsync(news);
                     }
                 }
             }

@@ -23,6 +23,7 @@ public class GetNewsQueryHandler : IRequestHandler<GetNewsQuery, IEnumerable<New
             {
                 Text = c.Text,
                 Grade = c.Grade,
+                isGenerated = c.isGenerated,
                 Date = c.Date
             });
 

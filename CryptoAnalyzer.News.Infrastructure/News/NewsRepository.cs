@@ -26,15 +26,15 @@ public class NewsRepository : INewsRepository
             .ToListAsync();
     }
 
-    public async Task<Domain.Entities.News> CreateNewsAsync(Domain.Entities.News news)
+    public async Task<IEnumerable<Domain.Entities.News>> CreateNewsAsync(IEnumerable<Domain.Entities.News> news)
     {
-        await _context.AddAsync(news);
+        await _context.AddRangeAsync(news);
         await _context.SaveChangesAsync();
 
         return news;
     }
 
-    public async Task<string> GetLatestNewsAsync()
+    public async Task<IEnumerable<Domain.Entities.News>> GetLatestNewsAsync()
     {
         using var httpClient = new HttpClient();
         httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
@@ -44,10 +44,16 @@ public class NewsRepository : INewsRepository
 
         var newsItems = feed.Items
             .Take(20)
-            .Select(item => $"- {item.Title.Text}")
+            .Select(item => new Domain.Entities.News
+            {
+                Id = Guid.NewGuid(),
+                Text = item.Title.Text,
+                isGenerated = false,
+                Date = DateTime.UtcNow
+            })
             .ToList();
         
-        return string.Join("\n", newsItems);
+        return newsItems;
     }
 
     public async Task<Domain.Entities.News> NormalizeNews(string rowNews)
@@ -83,6 +89,7 @@ public class NewsRepository : INewsRepository
 
         if (normalizedNews != null)
         {
+            normalizedNews.isGenerated = true;
             normalizedNews.Date = DateTime.UtcNow;
         }
 
