@@ -1,4 +1,6 @@
-﻿using CryptoAnalyzer.News.Core.Interfaces;
+﻿using CryptoAnalyzer.Core.Events;
+using CryptoAnalyzer.News.Core.Interfaces;
+using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -7,10 +9,12 @@ namespace CryptoAnalyzer.News.Core;
 public class AnalyzeNews : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
+    private readonly IPublishEndpoint _eventBus;
 
-    public AnalyzeNews(IServiceProvider serviceProvider)
+    public AnalyzeNews(IServiceProvider serviceProvider, IPublishEndpoint eventBus)
     {
         _serviceProvider = serviceProvider;
+        _eventBus = eventBus;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -33,6 +37,13 @@ public class AnalyzeNews : BackgroundService
                     {
                         var analyzedNews = await repository.NormalizeNews(rawNews);
                         news.Add(analyzedNews);
+
+                        await _eventBus.Publish(new NewsEvent
+                        {
+                            NewsText = analyzedNews.Text,
+                            Sentiment = analyzedNews.Grade
+                        });
+                        
                         await repository.CreateNewsAsync(news);
                     }
                 }

@@ -4,6 +4,7 @@ using CryptoAnalyzer.News.Infrastructure;
 using CryptoAnalyzer.News.Infrastructure.News;
 using CryptoAnalyzer.NewsService.Extensions;
 using dotenv.net;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -12,6 +13,15 @@ DotEnv.Load();
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddEnvironmentVariables();
+
+builder.Services.AddMassTransit(cfg =>
+{
+    cfg.UsingRabbitMq((context, cfg) =>
+    {
+        var connectionString = builder.Configuration.GetConnectionString("EventBus");
+        cfg.Host(new Uri(connectionString));
+    });
+});
 
 builder.Services.AddScoped<INewsRepository, NewsRepository>();
 builder.Services.AddHostedService<AnalyzeNews>();
