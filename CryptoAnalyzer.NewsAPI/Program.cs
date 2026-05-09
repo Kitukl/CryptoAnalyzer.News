@@ -18,8 +18,7 @@ builder.Services.AddMassTransit(cfg =>
 {
     cfg.UsingRabbitMq((context, cfg) =>
     {
-        var connectionString = builder.Configuration.GetConnectionString("EventBus");
-        cfg.Host(new Uri(connectionString));
+        cfg.Host(builder.Configuration.GetConnectionString("EventBus"));
     });
 });
 
