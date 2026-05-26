@@ -9,12 +9,10 @@ namespace CryptoAnalyzer.News.Core;
 public class AnalyzeNews : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly IPublishEndpoint _eventBus;
 
-    public AnalyzeNews(IServiceProvider serviceProvider, IPublishEndpoint eventBus)
+    public AnalyzeNews(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
-        _eventBus = eventBus;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -25,6 +23,7 @@ public class AnalyzeNews : BackgroundService
             {
                 using (var scope = _serviceProvider.CreateScope())
                 {
+                    var publishEndpoint = scope.ServiceProvider.GetRequiredService<IPublishEndpoint>();
                     var repository = scope.ServiceProvider.GetRequiredService<INewsRepository>();
                     var latestNews = (await repository.GetLatestNewsAsync()).ToList();
                     var newsInDb = await repository.GetNewsAsync();
@@ -38,7 +37,7 @@ public class AnalyzeNews : BackgroundService
                         var analyzedNews = await repository.NormalizeNews(rawNews);
                         news.Add(analyzedNews);
 
-                        await _eventBus.Publish(new NewsEvent
+                        await publishEndpoint.Publish(new NewsEvent
                         {
                             NewsText = analyzedNews.Text,
                             Sentiment = analyzedNews.Grade
